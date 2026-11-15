@@ -14,8 +14,9 @@ if (-not (Test-Path -LiteralPath $executablePath)) {
 }
 
 $executable = Get-Item -LiteralPath $executablePath
-if ($executable.Length -ge 30MB) {
-    throw "Published executable must be smaller than 30 MiB, got $($executable.Length) bytes."
+# Beta 23 adds the bounded, optional Jint worker interpreter (~3 MiB). Keep a tight app cap and the existing setup cap.
+if ($executable.Length -ge 35MB) {
+    throw "Published executable must be smaller than 35 MiB, got $($executable.Length) bytes."
 }
 
 $bundledRuntimeFiles = @(
@@ -49,7 +50,7 @@ if ($SourceZipPath) {
         foreach ($requiredEntry in @('README.md', 'LICENSE', 'docs/USER-GUIDE.zh-CN.md', 'docs/USER-GUIDE.en-US.md')) {
             if ($entryNames -notcontains $requiredEntry) { throw "Source archive is missing $requiredEntry." }
         }
-        $forbidden = @($entryNames | Where-Object { $_ -match '(^|/)(\.git|\.worktrees|\.superpowers|artifacts|bin|obj|TestResults)(/|$)' })
+        $forbidden = @($entryNames | Where-Object { $_ -match '(^|/)(\.git|\.worktrees|\.superpowers|artifacts|bin|obj|TestResults|GitHub-Upload-v[^/]*)(/|$)' })
         if ($forbidden.Count -ne 0) { throw "Source archive contains excluded paths: $($forbidden -join ', ')" }
         $desktopIni = @($entryNames | Where-Object { $_ -match '(^|/)desktop\.ini$' })
         if ($desktopIni.Count -ne 0) { throw "Source archive contains desktop.ini: $($desktopIni -join ', ')" }

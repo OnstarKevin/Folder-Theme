@@ -1,4 +1,4 @@
-<controls:RoundedWindow x:Class="FolderThemeStudio.App.TutorialWindow"
+<controls:RoundedWindow x:Class="FolderThemeStudio.App.TutorialWindow" Style="{StaticResource {x:Type Window}}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:FolderThemeStudio.App.Controls"

@@ -8,6 +8,26 @@ namespace FolderThemeStudio.Core.Tests.Application;
 public sealed class AppSettingsTests
 {
     [Fact]
+    public async Task FeatureSwitches_RoundTripDisabledWithoutLosingPaletteOrNotesChord()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        var json = System.Text.Json.JsonSerializer.Serialize(AppSettings.Default, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+        using var document = System.Text.Json.JsonDocument.Parse(json);
+        Assert.True(document.RootElement.TryGetProperty("themeEditingEnabled", out _));
+        var input = json[..^1] + ",\"themeEditingEnabled\":false,\"automaticRulesEnabled\":false,\"hoverCardsEnabled\":false,\"quickNotesEnabled\":false,\"dynamicIslandEnabled\":false,\"applicationBackgroundEnabled\":false}";
+        await File.WriteAllTextAsync(path, input);
+        var store = new JsonAppSettingsStore(path);
+        var loaded = await store.LoadAsync();
+        await store.SaveAsync(loaded);
+        using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(path));
+        foreach (var name in new[] { "themeEditingEnabled", "automaticRulesEnabled", "hoverCardsEnabled", "quickNotesEnabled", "dynamicIslandEnabled", "applicationBackgroundEnabled" })
+            Assert.False(saved.RootElement.GetProperty(name).GetBoolean());
+        Assert.Equal(AppSettings.Default.Palette, loaded.Palette);
+        Assert.Equal(AppSettings.Default.EditChord, loaded.EditChord);
+    }
+
+    [Fact]
     public async Task LoadAsync_MissingFile_ReturnsChineseDefaults()
     {
         using var directory = new TemporaryDirectory();
@@ -17,11 +37,12 @@ public sealed class AppSettingsTests
 
         Assert.Equal("zh-CN", settings.Language);
         Assert.False(settings.TutorialCompleted);
-        Assert.Equal("#65D9FF", settings.Palette.GradientStart);
+        Assert.Equal("#007AFF", settings.Palette.GradientStart);
         Assert.Empty(settings.RecentColors);
         Assert.True(settings.StartWithWindows);
         Assert.True(settings.CloseToTray);
         Assert.False(settings.MonitoringPaused);
+        Assert.True(settings.ThemeEditingEnabled && settings.AutomaticRulesEnabled && settings.HoverCardsEnabled && settings.QuickNotesEnabled && settings.DynamicIslandEnabled && settings.ApplicationBackgroundEnabled);
         Assert.Equal(1, settings.CardOpacity);
         Assert.Equal(FolderThemeStudio.App.Services.FolderEditChord.Default, settings.EditChord);
     }
@@ -80,6 +101,7 @@ public sealed class AppSettingsTests
         Assert.True(settings.StartWithWindows);
         Assert.True(settings.CloseToTray);
         Assert.False(settings.MonitoringPaused);
+        Assert.True(settings.ThemeEditingEnabled && settings.AutomaticRulesEnabled && settings.HoverCardsEnabled && settings.QuickNotesEnabled && settings.DynamicIslandEnabled && settings.ApplicationBackgroundEnabled);
         Assert.Equal(1, settings.CardOpacity);
     }
 

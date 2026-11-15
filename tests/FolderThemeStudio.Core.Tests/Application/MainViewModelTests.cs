@@ -12,6 +12,24 @@ namespace FolderThemeStudio.Core.Tests.Application;
 public sealed class MainViewModelTests
 {
     [Fact]
+    public async Task ThemeFeatureSwitch_PreventsApplyingReviewedPlanUntilReenabled()
+    {
+        var fixture = new MainViewModelFixture();
+        using var vm = fixture.CreateViewModel();
+        vm.SelectedMode = ApplicationMode.Compatible;
+        vm.SelectedRoots.Add(@"C:\Root");
+        await vm.PlanAsync();
+        Assert.True(vm.CanApply);
+        vm.SetFeatureSwitches(false, true);
+        Assert.False(vm.CanApply);
+        Assert.False(vm.CanPlan);
+        Assert.False(vm.AreInputsEnabled);
+        await vm.ApplyAsync();
+        Assert.Equal(0, fixture.Coordinator.ApplyCallCount);
+        vm.SetFeatureSwitches(true, true);
+        Assert.True(vm.CanApply);
+    }
+    [Fact]
     public async Task CompatibleApplyWithPersistence_UpsertsRecursiveMonitoringRule()
     {
         var fixture = new MainViewModelFixture();

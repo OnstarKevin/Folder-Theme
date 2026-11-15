@@ -11,6 +11,7 @@ public interface IFolderMonitoringCoordinator : IDisposable
     MonitoringStatus Status { get; }
     event EventHandler<MonitoringOutcome>? OutcomeProduced;
     Task StartAsync(CancellationToken token = default);
+    Task SetFeatureEnabledAsync(bool enabled, CancellationToken token = default) => Task.CompletedTask;
     Task PauseAsync(CancellationToken token = default);
     Task ResumeAsync(CancellationToken token = default);
     Task ReplaceRuleAsync(MonitoringRule rule, CancellationToken token = default);
@@ -33,6 +34,14 @@ public sealed class FolderMonitoringCoordinator : IFolderMonitoringCoordinator
     private readonly object sync = new();
     private bool paused;
     private bool disposed;
+    private volatile bool featureEnabled = true;
+
+    public async Task SetFeatureEnabledAsync(bool enabled, CancellationToken token = default)
+    {
+        featureEnabled = enabled;
+        RebuildWatchers();
+        if (!enabled) await WaitForIdleAsync().ConfigureAwait(false);
+    }
 
     public FolderMonitoringCoordinator(
         IMonitoringRuleStore store,
@@ -118,7 +127,7 @@ public sealed class FolderMonitoringCoordinator : IFolderMonitoringCoordinator
     private void RebuildWatchers()
     {
         ClearWatchers();
-        if (paused || disposed) return;
+        if (paused || disposed || !featureEnabled) return;
         foreach (var rule in rules.Values)
         {
             if (!Directory.Exists(rule.RootPath)) continue;
@@ -130,7 +139,7 @@ public sealed class FolderMonitoringCoordinator : IFolderMonitoringCoordinator
 
     private void DirectoryCreated(object? sender, DirectoryCreatedEventArgs e)
     {
-        if (sender is not IDirectoryWatcher watcher || !rules.TryGetValue(watcher.RootPath, out var rule)) return;
+        if (!featureEnabled || paused || disposed || sender is not IDirectoryWatcher watcher || !rules.TryGetValue(watcher.RootPath, out var rule)) return;
         string canonical;
         try { canonical = Path.TrimEndingDirectorySeparator(Path.GetFullPath(e.Path)); }
         catch (Exception) { return; }
@@ -152,6 +161,7 @@ public sealed class FolderMonitoringCoordinator : IFolderMonitoringCoordinator
             for (var attempt = 0; attempt < RetryDelays.Length; attempt++)
             {
                 await delay(RetryDelays[attempt], CancellationToken.None).ConfigureAwait(false);
+                if (!featureEnabled || paused || disposed) return;
                 outcome = await applier.ApplyAsync(path, icoPath, CancellationToken.None).ConfigureAwait(false);
                 if (outcome.Success) break;
             }

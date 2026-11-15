@@ -15,6 +15,8 @@ public sealed class TrayIconService : IDisposable
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("打开主窗口", null, (_, _) => OpenRequested?.Invoke(this, EventArgs.Empty));
         menu.Items.Add("暂停 / 恢复监控", null, (_, _) => ToggleMonitoringRequested?.Invoke(this, EventArgs.Empty));
+        menu.Items.Add("灵动岛设置与插件", null, (_, _) => IslandSettingsRequested?.Invoke(this, EventArgs.Empty));
+        menu.Items.Add("编辑灵动岛位置", null, (_, _) => IslandEditRequested?.Invoke(this, EventArgs.Empty));
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("退出", null, (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty));
         icon = new Forms.NotifyIcon
@@ -30,6 +32,8 @@ public sealed class TrayIconService : IDisposable
     public event EventHandler? OpenRequested;
     public event EventHandler? ToggleMonitoringRequested;
     public event EventHandler? ExitRequested;
+    public event EventHandler? IslandSettingsRequested;
+    public event EventHandler? IslandEditRequested;
 
     public void ShowBackgroundNotice() => icon.ShowBalloonTip(
         2500,

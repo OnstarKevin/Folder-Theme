@@ -11,6 +11,31 @@ namespace FolderThemeStudio.Core.Tests.Application;
 public sealed class SettingsViewModelTests
 {
     [Fact]
+    public async Task SaveAsync_PersistsIndependentFeatureSwitchesAndCancelLeavesThemUnchanged()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new JsonAppSettingsStore(Path.Combine(directory.Path, "settings.json"));
+        var fixture = new MainViewModelFixture();
+        using var main = fixture.CreateViewModel();
+        var model = new SettingsViewModel(AppSettings.Default, store, new LocalizationService(applyToApplication: false), main.ApplyPalette, fixture.Renderer)
+        {
+            ThemeEditingEnabled = false, AutomaticRulesEnabled = false,
+            HoverCardsEnabled = false, QuickNotesEnabled = true,
+            DynamicIslandEnabled = false, ApplicationBackgroundEnabled = false,
+        };
+        Assert.True(await model.SaveAsync());
+        var saved = await store.LoadAsync();
+        Assert.False(saved.ThemeEditingEnabled);
+        Assert.False(saved.AutomaticRulesEnabled);
+        Assert.False(saved.HoverCardsEnabled);
+        Assert.True(saved.QuickNotesEnabled);
+        Assert.False(saved.DynamicIslandEnabled);
+        Assert.False(saved.ApplicationBackgroundEnabled);
+        var canceled = new SettingsViewModel(saved, store, new LocalizationService(applyToApplication: false), main.ApplyPalette, fixture.Renderer) { HoverCardsEnabled = true };
+        canceled.Cancel();
+        Assert.False((await store.LoadAsync()).HoverCardsEnabled);
+    }
+    [Fact]
     public void SettingsWindow_ShowsWithLivePalettePreview()
     {
         WpfTestHost.Invoke(() =>

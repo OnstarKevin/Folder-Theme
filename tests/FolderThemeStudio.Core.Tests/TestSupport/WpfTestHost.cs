@@ -20,6 +20,7 @@ internal static class WpfTestHost
             {
                 var application = new FolderThemeStudio.App.App();
                 application.InitializeComponent();
+                application.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
                 ready.SetResult();
                 foreach (var item in queue.GetConsumingEnumerable()) item.Execute();
             })

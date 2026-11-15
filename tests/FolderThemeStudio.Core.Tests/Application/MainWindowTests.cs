@@ -16,6 +16,62 @@ namespace FolderThemeStudio.Core.Tests.Application;
 
 public sealed class MainWindowTests
 {
+    [Fact]
+    public void AppearanceEditor_ExposesMaterialStickerAndDraggablePreview()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var viewModel = new MainViewModelFixture().CreateViewModel();
+            var window = new MainWindow(viewModel);
+            try
+            {
+                window.ShowActivated = false;
+                window.ShowInTaskbar = false;
+                window.Opacity = 0;
+                window.Left = -10000;
+                window.Top = -10000;
+                window.Show();
+                window.UpdateLayout();
+                var material = Assert.IsType<System.Windows.Controls.ComboBox>(window.FindName("MaterialPicker"));
+                var sticker = Assert.IsType<System.Windows.Controls.ComboBox>(window.FindName("StickerPicker"));
+                Assert.IsType<System.Windows.Controls.Image>(window.FindName("StickerDragPreview"));
+                material.SelectedValue = FolderThemeStudio.Core.Themes.MaterialStyle.Clay;
+                sticker.SelectedIndex = 3;
+                Assert.Equal(FolderThemeStudio.Core.Themes.MaterialStyle.Clay, viewModel.Material);
+                Assert.Equal(FolderThemeStudio.Core.Themes.StickerStyle.Heart, viewModel.Sticker);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Fact]
+    public void SimulatedDesktop_HasBackgroundControlAndShowsCurrentIcon()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var viewModel = new MainViewModelFixture().CreateViewModel();
+            var window = new MainWindow(viewModel);
+            try
+            {
+                window.ShowActivated = false;
+                window.ShowInTaskbar = false;
+                window.Opacity = 0;
+                window.Left = -10000;
+                window.Top = -10000;
+                window.Show();
+                window.UpdateLayout();
+                var background = Assert.IsType<System.Windows.Controls.ComboBox>(window.FindName("DesktopBackgroundPicker"));
+                Assert.IsType<System.Windows.Controls.Image>(window.FindName("DesktopSampleIcon"));
+                var size = Assert.IsType<System.Windows.Controls.Slider>(window.FindName("DesktopIconSizeSlider"));
+                background.SelectedIndex = 1;
+                size.Value = 128;
+                Assert.Equal("#4A2D51", viewModel.DesktopBackground);
+                Assert.Equal(128, viewModel.DesktopIconSize);
+            }
+            finally { window.Close(); }
+        });
+    }
+
     [Theory]
     [InlineData(200, -120, 296)]
     [InlineData(200, 120, 104)]
@@ -79,7 +135,7 @@ public sealed class MainWindowTests
                 var folderCategories = Assert.IsType<System.Windows.Controls.Button>(window.FindName("FolderCategoriesButton"));
                 Assert.Equal("使用教程", tutorial.Content);
                 Assert.Equal("设置", settings.Content);
-                Assert.Equal("文件夹分类卡片", folderCategories.Content);
+                Assert.Equal("活文件夹与备注", folderCategories.Content);
             });
             WpfTestHost.Invoke(() => localization!.ApplyLanguage("en-US"));
             WpfTestHost.Invoke(() =>
@@ -89,7 +145,7 @@ public sealed class MainWindowTests
                 var folderCategories = Assert.IsType<System.Windows.Controls.Button>(window.FindName("FolderCategoriesButton"));
                 Assert.Equal("_Tutorial", tutorial.Content);
                 Assert.Equal("_Settings", settings.Content);
-                Assert.Equal("Folder Hover Cards", folderCategories.Content);
+                Assert.Equal("Live folders & notes", folderCategories.Content);
             });
         }
         finally
@@ -139,13 +195,13 @@ public sealed class MainWindowTests
             WpfTestHost.Invoke(() =>
             {
                 var button = Assert.IsType<System.Windows.Controls.Button>(window!.FindName("AutoStyleRulesButton"));
-                Assert.Equal("自动样式规则", button.Content);
+                Assert.Equal("自动样式", button.Content);
             });
             WpfTestHost.Invoke(() => localization.ApplyLanguage("en-US"));
             WpfTestHost.Invoke(() =>
             {
                 var button = Assert.IsType<System.Windows.Controls.Button>(window!.FindName("AutoStyleRulesButton"));
-                Assert.Equal("_Automatic Rules", button.Content);
+                Assert.Equal("Automatic styles", button.Content);
             });
         }
         finally
@@ -301,14 +357,14 @@ public sealed class MainWindowTests
             DateTime? firstDialogAt = null;
             var timer = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Background, (_, _) =>
             {
-                var dialog = System.Windows.Application.Current.Windows.OfType<FolderCategoriesWindow>().FirstOrDefault();
+                var dialog = System.Windows.Application.Current.Windows.OfType<FolderQuickNoteWindow>().FirstOrDefault();
                 if (dialog?.DataContext is FolderCategoriesViewModel categories)
                 {
                     firstDialogAt ??= DateTime.UtcNow;
                     if (DateTime.UtcNow - firstDialogAt < TimeSpan.FromMilliseconds(200)) return;
                     opened = dialog.IsVisible && categories.FolderPath == folder &&
-                             System.Windows.Application.Current.Windows.OfType<FolderCategoriesWindow>().Count() == 1;
-                    foreach (var categoryWindow in System.Windows.Application.Current.Windows.OfType<FolderCategoriesWindow>().ToArray())
+                             System.Windows.Application.Current.Windows.OfType<FolderQuickNoteWindow>().Count() == 1;
+                    foreach (var categoryWindow in System.Windows.Application.Current.Windows.OfType<FolderQuickNoteWindow>().ToArray())
                         categoryWindow.Close();
                     window.RequestExplicitExit();
                     frame.Continue = false;

@@ -1,8 +1,8 @@
-<Window x:Class="FolderThemeStudio.App.FolderCategoryPopupWindow"
+<Window x:Class="FolderThemeStudio.App.FolderCategoryPopupWindow" Style="{StaticResource {x:Type Window}}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Folder category"
-        Width="310"
+        Width="350"
         SizeToContent="Height"
         MinHeight="96"
         MaxWidth="360"
@@ -14,12 +14,14 @@
         ShowActivated="False"
         Topmost="True"
         Focusable="False"
+        AllowDrop="True"
         WindowStartupLocation="Manual"
         UseLayoutRounding="True">
-    <Border x:Name="CardPanel" Margin="8" Padding="16" Background="White" BorderBrush="#DDE4EE" BorderThickness="1"
+    <Border x:Name="CardPanel" Margin="8" Padding="16" Background="#FDFDFE" BorderBrush="#E5E5EA" BorderThickness="1"
+            AllowDrop="True" DragEnter="Card_DragEnter" DragOver="Card_DragOver"
             CornerRadius="16">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="5" Opacity="0.18" Color="#25334B" />
+            <DropShadowEffect BlurRadius="22" ShadowDepth="4" Opacity="0.12" Color="#1D1D1F" />
         </Border.Effect>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -33,6 +35,25 @@
                            TextTrimming="CharacterEllipsis" />
                 <TextBlock x:Name="CategoryNote" Margin="0,5,0,0" Foreground="#58647A" TextWrapping="Wrap"
                            MaxWidth="290" />
+                <TextBlock x:Name="FolderInfoText" Margin="0,10,0,0" Foreground="#6E6E73" FontSize="11"
+                           LineHeight="18" TextWrapping="Wrap" Visibility="Collapsed" />
+                <Separator Margin="0,12,0,10" Background="#E6EAF0" />
+                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#58647A"
+                           Text="{DynamicResource LiveFolder.Recent}" />
+                <ItemsControl x:Name="RecentFilesList" Margin="0,6,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="0,3,0,3" Foreground="#172033" Text="{Binding Name}"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock x:Name="EmptyHint" Margin="0,6,0,0" Foreground="#8A96A8"
+                           Text="{DynamicResource LiveFolder.Empty}" />
+                <TextBlock x:Name="DropHint" Margin="0,12,0,0" Foreground="#2868D7" FontSize="12"
+                           Text="{DynamicResource LiveFolder.DropHint}" TextWrapping="Wrap" />
+                <StackPanel x:Name="DropTargetsPanel" Margin="0,8,0,0" Visibility="Collapsed" />
+                <TextBlock x:Name="DropStatus" Margin="0,7,0,0" Foreground="#58647A" TextWrapping="Wrap" />
             </StackPanel>
         </Grid>
     </Border>

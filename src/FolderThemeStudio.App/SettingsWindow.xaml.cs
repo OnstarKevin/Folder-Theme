@@ -11,11 +11,14 @@ public partial class SettingsWindow : RoundedWindow
 {
     private readonly SettingsViewModel viewModel;
 
-    public SettingsWindow(SettingsViewModel viewModel)
+    private readonly Func<Task>? configureIsland;
+    private async void IslandModules_Click(object sender, RoutedEventArgs e) { if (configureIsland is not null) await configureIsland(); }
+    public SettingsWindow(SettingsViewModel viewModel, Func<Task>? configureIsland = null)
     {
         InitializeComponent();
         this.viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         DataContext = viewModel;
+        this.configureIsland = configureIsland;
     }
 
     private async void Save_Click(object sender, RoutedEventArgs e)

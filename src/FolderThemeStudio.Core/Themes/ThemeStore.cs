@@ -164,6 +164,7 @@ public sealed class ThemeStore
                 return null;
             }
 
+            theme = theme.UpgradeV1();
             var validation = ThemeValidator.Validate(theme);
             if (!validation.IsValid)
             {

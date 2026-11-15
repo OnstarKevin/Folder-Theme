@@ -190,6 +190,34 @@ public sealed class FolderMonitoringCoordinatorTests
         Assert.False(second.Status.Paused);
     }
 
+    [Fact]
+    public async Task FeatureSwitch_DisposesWatchersRetainsRulesAndRespectsExistingPause()
+    {
+        using var temp = new TemporaryDirectory();
+        var root = Path.Combine(temp.Path, "root");
+        Directory.CreateDirectory(root);
+        var store = new JsonMonitoringRuleStore(Path.Combine(temp.Path, "rules.json"));
+        await store.UpsertAsync(new(1, root, @"C:\style.ico", DateTimeOffset.UtcNow));
+        var watchers = new RecordingWatcherFactory();
+        var applier = new RecordingMonitoredApplier();
+        using var coordinator = new FolderMonitoringCoordinator(store, applier, watchers, (_, _) => Task.CompletedTask);
+        await coordinator.StartAsync();
+        var previous = watchers.Single;
+        await coordinator.SetFeatureEnabledAsync(false);
+        Assert.Equal(0, coordinator.Status.ActiveRules);
+        previous.Emit(Path.Combine(root, "disabled"));
+        await coordinator.WaitForIdleAsync();
+        Assert.Empty(applier.Calls);
+        Assert.Single((await store.LoadAsync()).Rules);
+        Assert.False((await store.LoadAsync()).Paused);
+        await coordinator.SetFeatureEnabledAsync(true);
+        Assert.Equal(1, coordinator.Status.ActiveRules);
+        await coordinator.PauseAsync();
+        await coordinator.SetFeatureEnabledAsync(false);
+        await coordinator.SetFeatureEnabledAsync(true);
+        Assert.Equal(0, coordinator.Status.ActiveRules);
+        Assert.True((await store.LoadAsync()).Paused);
+    }
     private sealed class RecordingMonitoredApplier : IMonitoredFolderIconService
     {
         internal ConcurrentQueue<(string Path, string Ico)> Calls { get; } = new();

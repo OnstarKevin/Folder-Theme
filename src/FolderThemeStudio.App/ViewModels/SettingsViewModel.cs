@@ -25,6 +25,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool closeToTray;
     private double cardOpacityPercent;
     private FolderEditChord editChord;
+    private bool themeEditingEnabled;
+    private bool automaticRulesEnabled;
+    private bool hoverCardsEnabled;
+    private bool quickNotesEnabled;
+    private bool dynamicIslandEnabled;
+    private bool applicationBackgroundEnabled;
 
     public SettingsViewModel(
         AppSettings initial,
@@ -43,6 +49,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         closeToTray = initial.CloseToTray;
         cardOpacityPercent = initial.CardOpacity * 100;
         editChord = initial.EditChord;
+        themeEditingEnabled = initial.ThemeEditingEnabled;
+        automaticRulesEnabled = initial.AutomaticRulesEnabled;
+        hoverCardsEnabled = initial.HoverCardsEnabled;
+        quickNotesEnabled = initial.QuickNotesEnabled;
+        dynamicIslandEnabled = initial.DynamicIslandEnabled;
+        applicationBackgroundEnabled = initial.ApplicationBackgroundEnabled;
         GradientStart = new ColorPickerViewModel(initial.Palette.GradientStart);
         GradientEnd = new ColorPickerViewModel(initial.Palette.GradientEnd);
         Stroke = new ColorPickerViewModel(initial.Palette.Stroke);
@@ -110,6 +122,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         set => SetField(ref closeToTray, value);
     }
 
+    public bool ThemeEditingEnabled { get => themeEditingEnabled; set => SetField(ref themeEditingEnabled, value); }
+    public bool AutomaticRulesEnabled { get => automaticRulesEnabled; set => SetField(ref automaticRulesEnabled, value); }
+    public bool HoverCardsEnabled { get => hoverCardsEnabled; set => SetField(ref hoverCardsEnabled, value); }
+    public bool QuickNotesEnabled { get => quickNotesEnabled; set => SetField(ref quickNotesEnabled, value); }
+    public bool DynamicIslandEnabled { get => dynamicIslandEnabled; set => SetField(ref dynamicIslandEnabled, value); }
+    public bool ApplicationBackgroundEnabled { get => applicationBackgroundEnabled; set => SetField(ref applicationBackgroundEnabled, value); }
+
     public double CardOpacityPercent
     {
         get => cardOpacityPercent;
@@ -131,22 +150,26 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public async Task<bool> SaveAsync()
     {
         if (!CanSave) return false;
+        // Inline pages can remain open while tutorial/monitoring state changes elsewhere.
+        var latest = await store.LoadAsync();
         var palette = CurrentPalette();
         var recent = new[] { palette.GradientStart, palette.GradientEnd, palette.Stroke, palette.Glow }
-            .Concat(initial.RecentColors)
+            .Concat(latest.RecentColors)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(12)
             .ToArray();
         var settings = new AppSettings(
             SelectedLanguage,
-            initial.TutorialCompleted,
+            latest.TutorialCompleted,
             palette,
             recent,
             StartWithWindows,
             CloseToTray,
-            initial.MonitoringPaused,
-            CardOpacityPercent / 100) { EditChord = EditChord };
+            latest.MonitoringPaused,
+            CardOpacityPercent / 100) { EditChord = EditChord, ThemeEditingEnabled = ThemeEditingEnabled, AutomaticRulesEnabled = AutomaticRulesEnabled, HoverCardsEnabled = HoverCardsEnabled, QuickNotesEnabled = QuickNotesEnabled, DynamicIslandEnabled = DynamicIslandEnabled, ApplicationBackgroundEnabled = ApplicationBackgroundEnabled };
         await store.SaveAsync(settings);
+        RecentColors.Clear();
+        foreach (var color in recent) RecentColors.Add(color);
         localization.ApplyLanguage(SelectedLanguage);
         applyPalette(palette);
         return true;

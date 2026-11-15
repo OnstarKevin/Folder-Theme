@@ -21,7 +21,7 @@ public sealed class TutorialViewModel : INotifyPropertyChanged
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.store = store ?? throw new ArgumentNullException(nameof(store));
         ArgumentNullException.ThrowIfNull(localization);
-        Steps = Enumerable.Range(1, 5)
+        Steps = Enumerable.Range(1, 3)
             .Select(index => new TutorialStep(
                 localization.Get($"Tutorial.Step{index}.Title"),
                 localization.Get($"Tutorial.Step{index}.Body")))

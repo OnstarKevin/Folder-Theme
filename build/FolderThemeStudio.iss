@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.1.0-beta.8"
+  #define AppVersion "0.1.0-beta.24-preview.8"
 #endif
 #ifndef SourceDir
   #define SourceDir "..\artifacts\publish"
@@ -38,8 +38,8 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 UninstallDisplayIcon={app}\{#AppExeName}
-VersionInfoVersion=0.1.0.8
-VersionInfoProductVersion=0.1.0.8
+VersionInfoVersion=0.1.0.24
+VersionInfoProductVersion=0.1.0.24
 VersionInfoDescription=Folder Theme Studio online installer
 
 [Languages]
@@ -69,13 +69,23 @@ Source: "{#SourceDir}\RELEASE-NOTES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\START-HERE.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\USER-GUIDE.zh-CN.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\USER-GUIDE.en-US.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\DYNAMIC-ISLAND.zh-CN.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\licenses\NotchPeninsula-Apache-2.0.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
+Source: "{#SourceDir}\licenses\Jint-BSD-2-Clause.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
+Source: "{#SourceDir}\licenses\Acornima-BSD-3-Clause.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
+Source: "{#SourceDir}\Island-Plugin-API-v1.zip"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Folder Theme Studio"; Filename: "{app}\{#AppExeName}"
 Name: "{autodesktop}\Folder Theme Studio"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
+[InstallDelete]
+Type: files; Name: "{group}\恢复桌面图标.lnk"
+
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchApp}"; Flags: nowait postinstall skipifsilent; Check: CanLaunchApplication
+
 
 [Code]
 const

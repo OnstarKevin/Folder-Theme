@@ -9,6 +9,7 @@ namespace FolderThemeStudio.App.Services;
 public interface IFolderHoverMonitorService : IDisposable
 {
     Task StartAsync(CancellationToken token = default);
+    Task StopAsync(CancellationToken token = default) => Task.CompletedTask;
     Task ReloadCatalogAsync(CancellationToken token = default);
 }
 
@@ -21,6 +22,9 @@ public interface IFolderHoverCardPresenter
 {
     void Show(FolderCategoryEntry entry, Rect itemBounds);
     void Hide();
+    bool IsPointerOverCard(Point screenPoint) => false;
+    void SetDropInteractionEnabled(bool enabled) { }
+    void SetInfoTipTarget(ExplorerHoverTarget? target) { }
 }
 
 public sealed class FolderHoverMonitor : IFolderHoverMonitorService
@@ -34,6 +38,7 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
     private readonly TimeProvider timeProvider;
     private readonly Func<Point, nint> rootAtPoint;
     private readonly SemaphoreSlim lifecycleGate = new(1, 1);
+    private readonly NativeMouseInteraction nativeMouse = new();
     private IReadOnlyDictionary<string, FolderCategoryEntry> entries = new Dictionary<string, FolderCategoryEntry>(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? stopSource;
     private Task? pollingTask;
@@ -51,6 +56,30 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
              snapshot.Target.RootWindowHandle != rootWindowHandle)) return null;
         return snapshot.Target;
     }
+
+    public void NotifyNativeMouseDown(Point point)
+    {
+        nativeMouse.OnDown(point, timeProvider.GetUtcNow());
+        Volatile.Write(ref quickEditSnapshot, null);
+        try { _ = dispatcher.InvokeAsync(SafeHide); }
+        catch (InvalidOperationException) { SafeHide(); }
+    }
+
+    public void NotifyNativeMouseUp() => nativeMouse.OnUp(timeProvider.GetUtcNow());
+
+    public Task<ExplorerHoverTarget?> ResolveQuickEditTargetAsync(Point point, nint rootWindowHandle) => Task.Run(() =>
+    {
+        if (disposed || rootWindowHandle == nint.Zero) return null;
+        try
+        {
+            if (rootAtPoint(point) != rootWindowHandle) return null;
+            var target = targetResolver.TryResolve(point);
+            return !disposed && target is not null && target.ItemBounds.Contains(point) &&
+                (target.RootWindowHandle == nint.Zero || target.RootWindowHandle == rootWindowHandle)
+                ? target : null;
+        }
+        catch (Exception) { return null; }
+    });
 
     public FolderHoverMonitor(
         IFolderCategoryCatalog catalog,
@@ -82,7 +111,6 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
                 ArgumentException or System.Text.Json.JsonException)
             {
                 Volatile.Write(ref entries, new Dictionary<string, FolderCategoryEntry>(StringComparer.OrdinalIgnoreCase));
-                return;
             }
             stopSource = new CancellationTokenSource();
             pollingTask = PollAsync(stopSource.Token);
@@ -91,6 +119,22 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
     }
 
     public Task ReloadCatalogAsync(CancellationToken token = default) => ReloadCatalogCoreAsync(token);
+
+    public async Task StopAsync(CancellationToken token = default)
+    {
+        await lifecycleGate.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            stopSource?.Cancel();
+            if (pollingTask is not null) await pollingTask.ConfigureAwait(false);
+            pollingTask = null;
+            stopSource?.Dispose();
+            stopSource = null;
+            Volatile.Write(ref quickEditSnapshot, null);
+            await dispatcher.InvokeAsync(SafeHide).ConfigureAwait(false);
+        }
+        finally { lifecycleGate.Release(); }
+    }
 
     public void Dispose()
     {
@@ -115,7 +159,9 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
         using var timer = new PeriodicTimer(PollInterval, timeProvider);
         var decision = new FolderHoverDecision();
         ExplorerHoverTarget? cachedTarget = null;
-        FolderCategoryEntry? displayed = null;
+        ExplorerHoverTarget? displayed = null;
+        FolderCategoryEntry? displayedEntry = null;
+        DateTimeOffset lastOnFolder = default;
 
         try
         {
@@ -129,6 +175,24 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
                     decision.Reset();
                     await HideIfVisibleAsync(displayed).ConfigureAwait(false);
                     displayed = null;
+                    displayedEntry = null;
+                    continue;
+                }
+
+                if (nativeMouse.ShouldSuppress(point, timeProvider.GetUtcNow()))
+                {
+                    cachedTarget = null;
+                    Volatile.Write(ref quickEditSnapshot, null);
+                    decision.Reset();
+                    await HideIfVisibleAsync(displayed).ConfigureAwait(false);
+                    displayed = null;
+                    displayedEntry = null;
+                    continue;
+                }
+
+                if (displayed is not null && presenter.IsPointerOverCard(point))
+                {
+                    lastOnFolder = timeProvider.GetUtcNow();
                     continue;
                 }
 
@@ -148,22 +212,50 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
                     }
                 }
                 Volatile.Write(ref quickEditSnapshot, cachedTarget is null ? null : new HoverTargetSnapshot(cachedTarget, timeProvider.GetUtcNow()));
+                await dispatcher.InvokeAsync(() => presenter.SetInfoTipTarget(
+                    !disposed && !nativeMouse.ShouldSuppress(point, timeProvider.GetUtcNow()) ? cachedTarget : null)).ConfigureAwait(false);
 
-                var visibleEntry = decision.Update(cachedTarget, point, currentEntries, timeProvider.GetUtcNow());
-                if (visibleEntry is null)
+                var now = timeProvider.GetUtcNow();
+                var visibleTarget = decision.UpdateTarget(cachedTarget, point, now);
+                if (visibleTarget is null && displayed is not null && cachedTarget is not null &&
+                    string.Equals(cachedTarget.FolderPath, displayed.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                    cachedTarget.ItemBounds.Contains(point))
+                    visibleTarget = cachedTarget;
+                if (visibleTarget is null)
                 {
+                    if (displayed is not null &&
+                        (cachedTarget is null || string.Equals(cachedTarget.FolderPath, displayed.FolderPath, StringComparison.OrdinalIgnoreCase)) &&
+                        now - lastOnFolder < TimeSpan.FromMilliseconds(500))
+                        continue;
                     await HideIfVisibleAsync(displayed).ConfigureAwait(false);
                     displayed = null;
+                    displayedEntry = null;
                     continue;
                 }
 
-                if (!Equals(displayed, visibleEntry))
+                lastOnFolder = now;
+                var visibleEntry = currentEntries.TryGetValue(visibleTarget.FolderPath, out var category)
+                    ? category
+                    : new FolderCategoryEntry(visibleTarget.FolderPath,
+                        Path.GetFileName(visibleTarget.FolderPath), string.Empty, "#2868D7");
+                if (!string.Equals(displayed?.FolderPath, visibleTarget.FolderPath, StringComparison.OrdinalIgnoreCase) ||
+                    !Equals(displayedEntry, visibleEntry))
                 {
+                    var showed = false;
                     await dispatcher.InvokeAsync(() =>
                     {
-                        if (!disposed) presenter.Show(visibleEntry, cachedTarget!.ItemBounds);
+                        if (!disposed && !nativeMouse.ShouldSuppress(point, timeProvider.GetUtcNow()))
+                        {
+                            presenter.SetDropInteractionEnabled(nativeMouse.IsDragging(point));
+                            presenter.Show(visibleEntry, cachedTarget!.ItemBounds);
+                            showed = true;
+                        }
                     }).ConfigureAwait(false);
-                    displayed = visibleEntry;
+                    if (showed)
+                    {
+                        displayed = visibleTarget;
+                        displayedEntry = visibleEntry;
+                    }
                 }
             }
         }
@@ -183,7 +275,7 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
         }
     }
 
-    private async Task HideIfVisibleAsync(FolderCategoryEntry? displayed)
+    private async Task HideIfVisibleAsync(ExplorerHoverTarget? displayed)
     {
         if (displayed is null) return;
         await dispatcher.InvokeAsync(SafeHide).ConfigureAwait(false);
@@ -191,6 +283,8 @@ public sealed class FolderHoverMonitor : IFolderHoverMonitorService
 
     private void SafeHide()
     {
+        try { presenter.SetInfoTipTarget(null); }
+        catch (Exception) { }
         try { presenter.Hide(); }
         catch (Exception) { }
     }

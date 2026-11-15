@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup>
+  <TargetFramework>net8.0-windows</TargetFramework><UseWPF>true</UseWPF><OutputType>WinExe</OutputType>
+  <Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><AssemblyName>FolderThemeStudio.FontReview</AssemblyName>
+  <Version>0.1.0-beta.24-preview</Version><PublishSingleFile>true</PublishSingleFile><SelfContained>false</SelfContained>
+ </PropertyGroup>
+ <ItemGroup><Resource Include="../../src/FolderThemeStudio.App/Assets/IslandSky.png" Link="OriginalIslandSky.png"/></ItemGroup>
+</Project>

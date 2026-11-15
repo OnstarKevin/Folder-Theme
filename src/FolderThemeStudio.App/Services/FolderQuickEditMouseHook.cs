@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Point = System.Windows.Point;
@@ -9,10 +10,15 @@ namespace FolderThemeStudio.App.Services;
 public sealed class FolderQuickEditMouseHook : IDisposable
 {
     private const int WhMouseLl = 14;
+    private const int WmLeftDown = 0x0201;
+    private const int WmLeftUp = 0x0202;
+    private const int WmLeftDoubleClick = 0x0203;
     private const int WmRightDown = 0x0204;
     private const int WmRightUp = 0x0205;
+    private const int WmRightDoubleClick = 0x0206;
     private const int WmMiddleDown = 0x0207;
     private const int WmMiddleUp = 0x0208;
+    private const int WmMiddleDoubleClick = 0x0209;
     private const int GaRoot = 2;
     private readonly FolderHoverMonitor monitor;
     private readonly Action<string> openEditor;
@@ -20,6 +26,19 @@ public sealed class FolderQuickEditMouseHook : IDisposable
     private readonly FolderQuickEditDecision decision;
     private readonly HookProc callback;
     private nint handle;
+    private int latestEditRequest;
+    private bool editingEnabled = true;
+
+    public static bool IsRequired(bool hoverCardsEnabled, bool quickNotesEnabled) => hoverCardsEnabled || quickNotesEnabled;
+
+    public void SetEditingEnabled(bool enabled)
+    {
+        editingEnabled = enabled;
+        if (enabled) return;
+        ++latestEditRequest;
+        decision.OnMouseUp(FolderMouseButton.Right);
+        decision.OnMouseUp(FolderMouseButton.Middle);
+    }
 
     public FolderQuickEditMouseHook(FolderHoverMonitor monitor, Action<string> openEditor, FolderEditChord chord, Dispatcher dispatcher)
     {
@@ -36,6 +55,7 @@ public sealed class FolderQuickEditMouseHook : IDisposable
 
     public void Dispose()
     {
+        SetEditingEnabled(false);
         if (handle == nint.Zero) return;
         UnhookWindowsHookEx(handle);
         handle = nint.Zero;
@@ -45,19 +65,48 @@ public sealed class FolderQuickEditMouseHook : IDisposable
     {
         if (code < 0 || handle == nint.Zero) return CallNextHookEx(handle, code, message, data);
         var kind = message.ToInt32();
-        var button = kind is WmRightDown or WmRightUp ? FolderMouseButton.Right : FolderMouseButton.Middle;
-        if (kind is WmRightUp or WmMiddleUp)
-            return decision.OnMouseUp(button) ? new nint(1) : CallNextHookEx(handle, code, message, data);
-        if (kind is not (WmRightDown or WmMiddleDown)) return CallNextHookEx(handle, code, message, data);
+        if (kind is WmLeftUp or WmRightUp or WmMiddleUp)
+        {
+            monitor.NotifyNativeMouseUp();
+            if (editingEnabled && kind is WmRightUp or WmMiddleUp &&
+                decision.OnMouseUp(kind == WmRightUp ? FolderMouseButton.Right : FolderMouseButton.Middle))
+                return new nint(1);
+            return CallNextHookEx(handle, code, message, data);
+        }
+        if (kind is not (WmLeftDown or WmLeftDoubleClick or WmRightDown or WmRightDoubleClick or WmMiddleDown or WmMiddleDoubleClick))
+            return CallNextHookEx(handle, code, message, data);
 
         var mouse = Marshal.PtrToStructure<MouseHookData>(data);
         var point = new Point(mouse.Position.X, mouse.Position.Y);
+        if (kind is WmLeftDown or WmLeftDoubleClick)
+        {
+            monitor.NotifyNativeMouseDown(point);
+            return CallNextHookEx(handle, code, message, data);
+        }
+
+        var button = kind is WmRightDown or WmRightDoubleClick ? FolderMouseButton.Right : FolderMouseButton.Middle;
+        monitor.NotifyNativeMouseDown(point);
+        if (!editingEnabled) return CallNextHookEx(handle, code, message, data);
         var root = GetAncestor(WindowFromPoint(mouse.Position), GaRoot);
-        var target = monitor.TryGetRecentTarget(point, root);
-        var path = decision.OnMouseDown(button, CurrentModifiers(), point, target);
-        if (path is null) return CallNextHookEx(handle, code, message, data);
-        _ = dispatcher.BeginInvoke(() => openEditor(path));
+        if (!IsExplorerWindow(root) || !decision.TryBeginDeferredEdit(button, CurrentModifiers()))
+            return CallNextHookEx(handle, code, message, data);
+        var request = ++latestEditRequest;
+        _ = dispatcher.BeginInvoke(() => _ = OpenResolvedEditorAsync(point, root, request));
         return new nint(1);
+    }
+
+    private async Task OpenResolvedEditorAsync(Point point, nint root, int request)
+    {
+        if (!editingEnabled || handle == nint.Zero || request != latestEditRequest) return;
+        var target = await monitor.ResolveQuickEditTargetAsync(point, root);
+        if (editingEnabled && handle != nint.Zero && request == latestEditRequest && target is not null) openEditor(target.FolderPath);
+    }
+
+    private static bool IsExplorerWindow(nint window)
+    {
+        var name = new StringBuilder(128);
+        return GetClassName(window, name, name.Capacity) > 0 &&
+            name.ToString() is "CabinetWClass" or "ExploreWClass" or "Progman" or "WorkerW";
     }
 
     private static ModifierKeys CurrentModifiers()
@@ -102,4 +151,7 @@ public sealed class FolderQuickEditMouseHook : IDisposable
     private static extern nint WindowFromPoint(NativePoint point);
     [DllImport("user32.dll")]
     private static extern nint GetAncestor(nint window, int flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(nint window, StringBuilder className, int maximumCount);
 }

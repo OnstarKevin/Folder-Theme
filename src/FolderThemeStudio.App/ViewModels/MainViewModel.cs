@@ -147,6 +147,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private readonly RelayCommand toggleMonitoringCommand;
     private readonly RelayCommand removeMonitoringRuleCommand;
     private CancellationTokenSource? previewCancellation;
+    private bool previewsActive;
+    private bool modelDisposed;
+    private bool previewDirty = true;
     private CancellationTokenSource? operationCancellation;
     private Task previewCompletion = Task.CompletedTask;
     private Guid themeId;
@@ -165,6 +168,15 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private double glowRadius;
     private double shadowStrength;
     private double shadowOffset;
+    private MaterialStyle material;
+    private StickerStyle sticker;
+    private string stickerColor;
+    private double stickerX;
+    private double stickerY;
+    private double stickerScale;
+    private double stickerRotation;
+    private string desktopBackground = "DefaultWallpaper";
+    private double desktopIconSize = 64;
     private FolderTheme? selectedSavedTheme;
     private ApplicationMode selectedMode;
     private bool isThemeValid;
@@ -203,7 +215,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         IPreviewWorkScheduler? previewWorkScheduler = null,
         IImportedImageService? importedImageService = null,
         IFolderMonitoringCoordinator? folderMonitoring = null,
-        IMonitoringIconAssetService? monitoringAssets = null)
+        IMonitoringIconAssetService? monitoringAssets = null,
+        bool activatePreviews = true)
     {
         this.coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
         this.dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
@@ -212,6 +225,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         this.previewDelay = previewDelay ?? throw new ArgumentNullException(nameof(previewDelay));
         this.dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         this.previewWorkScheduler = previewWorkScheduler ?? new StaPreviewWorkScheduler();
+        previewsActive = activatePreviews;
         this.importedImageService = importedImageService ?? new ImportedImageService();
         this.folderMonitoring = folderMonitoring ?? new NullFolderMonitoringCoordinator();
         this.monitoringAssets = monitoringAssets ?? new PassthroughMonitoringIconAssetService();
@@ -234,6 +248,13 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         glowRadius = initial.GlowRadius;
         shadowStrength = initial.ShadowStrength;
         shadowOffset = initial.ShadowOffset;
+        material = initial.Material;
+        sticker = initial.Sticker;
+        stickerColor = initial.StickerColor;
+        stickerX = initial.StickerX;
+        stickerY = initial.StickerY;
+        stickerScale = initial.StickerScale;
+        stickerRotation = initial.StickerRotation;
         selectedSavedTheme = initial;
         PaletteEditor = new PaletteEditorViewModel(new FolderPalette(
             initial.GradientStart, initial.GradientEnd, initial.StrokeColor, initial.GlowColor));
@@ -257,7 +278,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         exportFailedPathsCommand = new RelayCommand(_ => _ = ExportFailedPathsAsync(), _ => FailedResults.Count > 0);
         chooseImportedImageCommand = new RelayCommand(_ => _ = ChooseImportedImageAsync(), _ => !IsBusy);
         clearImportedImageCommand = new RelayCommand(_ => ClearImportedImage(), _ => !IsBusy && importedImageAssetPath is not null);
-        toggleMonitoringCommand = new RelayCommand(_ => _ = ToggleMonitoringAsync(), _ => !IsBusy);
+        toggleMonitoringCommand = new RelayCommand(_ => _ = ToggleMonitoringAsync(), _ => !IsBusy && automaticRulesEnabled);
         removeMonitoringRuleCommand = new RelayCommand(parameter => _ = RemoveMonitoringRuleAsync(parameter as string), parameter => !IsBusy && parameter is string);
 
         RefreshValidation();
@@ -320,7 +341,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         get => continueApplyingToNewFolders;
         set => SetField(ref continueApplyingToNewFolders, value);
     }
-    public string MonitoringStatusText => folderMonitoring.Status.Paused
+    public string MonitoringStatusText => !automaticRulesEnabled ? "自动规则与监控已关闭" : folderMonitoring.Status.Paused
         ? $"监控已暂停（{folderMonitoring.Status.TotalRules} 条规则）"
         : $"正在监控 {folderMonitoring.Status.ActiveRules} 个目录；{folderMonitoring.Status.InactiveRules} 个目录暂不可用";
     public int ActiveMonitoringRuleCount => folderMonitoring.Status.ActiveRules;
@@ -357,7 +378,14 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         GlowStrength,
         GlowRadius,
         ShadowStrength,
-        ShadowOffset);
+        ShadowOffset,
+        Material,
+        Sticker,
+        StickerColor,
+        StickerX,
+        StickerY,
+        StickerScale,
+        StickerRotation);
 
     public FolderTheme? SelectedSavedTheme
     {
@@ -463,6 +491,65 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         set => SetThemeField(ref shadowOffset, value);
     }
 
+    public MaterialStyle Material
+    {
+        get => material;
+        set => SetThemeField(ref material, value);
+    }
+
+    public StickerStyle Sticker
+    {
+        get => sticker;
+        set => SetThemeField(ref sticker, value);
+    }
+
+    public string StickerColor
+    {
+        get => stickerColor;
+        set => SetThemeField(ref stickerColor, value ?? string.Empty);
+    }
+
+    public double StickerX
+    {
+        get => stickerX;
+        set => SetThemeField(ref stickerX, value);
+    }
+
+    public double StickerY
+    {
+        get => stickerY;
+        set => SetThemeField(ref stickerY, value);
+    }
+
+    public double StickerScale
+    {
+        get => stickerScale;
+        set => SetThemeField(ref stickerScale, value);
+    }
+
+    public double StickerRotation
+    {
+        get => stickerRotation;
+        set => SetThemeField(ref stickerRotation, value);
+    }
+
+    public string DesktopBackground
+    {
+        get => desktopBackground;
+        set
+        {
+            if (value is not ("DefaultWallpaper" or "#1B2A4A" or "#4A2D51" or "#204A46"))
+                throw new ArgumentOutOfRangeException(nameof(value));
+            SetField(ref desktopBackground, value);
+        }
+    }
+
+    public double DesktopIconSize
+    {
+        get => desktopIconSize;
+        set => SetField(ref desktopIconSize, Math.Clamp(value, 64, 128));
+    }
+
     public ApplicationMode SelectedMode
     {
         get => selectedMode;
@@ -553,8 +640,18 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     }
 
     public bool IsBusy => IsPlanning || IsApplying || IsRestoring || IsManagingThemes;
-    public bool AreInputsEnabled => !IsBusy;
-    public bool CanApply =>
+    private bool themeEditingEnabled = true;
+    private bool automaticRulesEnabled = true;
+    public void SetFeatureSwitches(bool themeEditing, bool automaticRules)
+    {
+        themeEditingEnabled = themeEditing;
+        automaticRulesEnabled = automaticRules;
+        OnPropertyChanged(nameof(AreInputsEnabled));
+        RaiseCommandStates();
+        RaiseMonitoringState();
+    }
+    public bool AreInputsEnabled => !IsBusy && themeEditingEnabled;
+    public bool CanApply => themeEditingEnabled &&
         HasValidIconSource &&
         HasRequiredRoots &&
         !IsBusy &&
@@ -562,7 +659,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         reviewedPlan is { CanApply: true } &&
         reviewedRequest is not null &&
         reviewedPlanRevision == inputRevision;
-    public bool CanPlan => HasValidIconSource && HasRequiredRoots && !IsBusy && !IsPreviewRendering;
+    public bool CanPlan => themeEditingEnabled && HasValidIconSource && HasRequiredRoots && !IsBusy && !IsPreviewRendering;
     public bool HasProgressRange => ProgressTotal > 0;
 
     public int PlanAllowedCount
@@ -640,6 +737,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         if (IsBusy) return;
         var sourcePath = await dialogs.PickImageImportPathAsync();
         if (string.IsNullOrWhiteSpace(sourcePath)) return;
+        await ImportImagePathAsync(sourcePath);
+    }
+    public async Task ImportImagePathAsync(string sourcePath)
+    {
+        if (IsBusy) return;
         var result = await importedImageService.ImportAsync(sourcePath, CancellationToken.None);
         if (!result.Success || result.AssetPath is null || result.Preview is null)
         {
@@ -866,6 +968,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public void Dispose()
     {
+        if (modelDisposed) return;
+        modelDisposed = true;
         folderMonitoring.OutcomeProduced -= MonitoringOutcomeProduced;
         folderMonitoring.Dispose();
         PaletteEditor.PaletteChanged -= PaletteEditorChanged;
@@ -1091,6 +1195,13 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         glowRadius = theme.GlowRadius;
         shadowStrength = theme.ShadowStrength;
         shadowOffset = theme.ShadowOffset;
+        material = theme.Material;
+        sticker = theme.Sticker;
+        stickerColor = theme.StickerColor;
+        stickerX = theme.StickerX;
+        stickerY = theme.StickerY;
+        stickerScale = theme.StickerScale;
+        stickerRotation = theme.StickerRotation;
         inputRevision++;
 
         foreach (var property in ThemePropertyNames)
@@ -1109,7 +1220,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         nameof(ThemeName), nameof(GradientStart), nameof(GradientEnd), nameof(GradientAngle),
         nameof(Opacity), nameof(CornerRadius), nameof(StrokeColor), nameof(StrokeOpacity),
         nameof(StrokeWidth), nameof(HighlightStrength), nameof(GlowColor), nameof(GlowStrength),
-        nameof(GlowRadius), nameof(ShadowStrength), nameof(ShadowOffset)
+        nameof(GlowRadius), nameof(ShadowStrength), nameof(ShadowOffset),
+        nameof(Material), nameof(Sticker), nameof(StickerColor), nameof(StickerX),
+        nameof(StickerY), nameof(StickerScale), nameof(StickerRotation)
     ];
 
     private void SelectedRootsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1317,6 +1430,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private void QueuePreviewRefresh()
     {
+        if (modelDisposed) return;
+        previewDirty = true;
+        if (!previewsActive) return;
         previewCancellation?.Cancel();
         previewCancellation?.Dispose();
         var cancellation = new CancellationTokenSource();
@@ -1327,10 +1443,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private async Task RefreshPreviewsAsync(CancellationTokenSource cancellation)
     {
+        var token = cancellation.Token;
         try
         {
-            await previewDelay.DelayAsync(PreviewDebounce, cancellation.Token);
-            cancellation.Token.ThrowIfCancellationRequested();
+            await previewDelay.DelayAsync(PreviewDebounce, token);
+            token.ThrowIfCancellationRequested();
             if (!HasValidIconSource)
             {
                 await dispatcher.InvokeAsync(() =>
@@ -1346,21 +1463,22 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 var images = new List<(int Size, BitmapSource Image)>();
                 foreach (var size in sizes)
                 {
-                    cancellation.Token.ThrowIfCancellationRequested();
+                    token.ThrowIfCancellationRequested();
                     var image = previewRenderer.Render(source, size);
                     if (image.CanFreeze && !image.IsFrozen) image.Freeze();
                     images.Add((size, image));
                 }
 
                 return (IReadOnlyList<(int Size, BitmapSource Image)>)images;
-            }, cancellation.Token);
+            }, token);
             await dispatcher.InvokeAsync(() =>
             {
-                cancellation.Token.ThrowIfCancellationRequested();
+                token.ThrowIfCancellationRequested();
                 foreach (var item in rendered)
                 {
                     Previews.Single(preview => preview.Size == item.Size).Image = item.Image;
                 }
+                if (ReferenceEquals(previewCancellation, cancellation)) previewDirty = false;
             });
         }
         catch (OperationCanceledException)
@@ -1381,6 +1499,20 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 await dispatcher.InvokeAsync(() => IsPreviewRendering = false);
             }
         }
+    }
+
+    /// <summary>Background residency does not render hidden editor previews.</summary>
+    public void SetPreviewActivity(bool active)
+    {
+        if (modelDisposed) return;
+        if (previewsActive == active) return;
+        previewsActive = active;
+        if (!active)
+        {
+            if (IsPreviewRendering) { previewDirty = true; previewCancellation?.Cancel(); }
+            IsPreviewRendering = false;
+        }
+        else if (previewDirty) QueuePreviewRefresh();
     }
 
     private void RefreshResultCommands()
@@ -1451,6 +1583,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public async Task ToggleMonitoringAsync()
     {
+        if (!automaticRulesEnabled) return;
         if (folderMonitoring.Status.Paused) await folderMonitoring.ResumeAsync();
         else await folderMonitoring.PauseAsync();
         RaiseMonitoringState();
@@ -1563,33 +1696,31 @@ public sealed class TaskPreviewDelay : IPreviewDelay
 public sealed class StaPreviewWorkScheduler : IPreviewWorkScheduler
 {
     private readonly BlockingCollection<IWorkItem> queue = [];
-    private readonly Thread thread;
+    private Thread? thread;
+    private readonly object startGate = new();
     private int disposed;
-
-    public StaPreviewWorkScheduler()
-    {
-        thread = new Thread(ProcessQueue)
-        {
-            IsBackground = true,
-            Name = "Folder Theme Studio preview renderer"
-        };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-    }
+    public bool IsStarted { get { lock (startGate) return thread is not null; } }
 
     public Task<T> RunAsync<T>(Func<T> work, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(work);
         ObjectDisposedException.ThrowIf(disposed != 0, this);
         token.ThrowIfCancellationRequested();
-        var item = new WorkItem<T>(work, token);
-        queue.Add(item, token);
-        return item.Task;
+        lock (startGate)
+        {
+            ObjectDisposedException.ThrowIf(disposed != 0, this);
+            if (thread is null)
+            {
+                thread = new Thread(ProcessQueue) { IsBackground = true, Name = "Folder Theme Studio preview renderer" };
+                thread.SetApartmentState(ApartmentState.STA); thread.Start();
+            }
+            var item = new WorkItem<T>(work, token); queue.Add(item, token); return item.Task;
+        }
     }
 
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref disposed, 1) == 0) queue.CompleteAdding();
+        lock (startGate) { if (Interlocked.Exchange(ref disposed, 1) == 0) queue.CompleteAdding(); }
     }
 
     private void ProcessQueue()

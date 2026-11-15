@@ -20,6 +20,7 @@ public static class ThemeValidator
         ValidateAngle(theme, errors);
         ValidateUnitRangeProperties(theme, errors);
         ValidateGeometryProperties(theme, errors);
+        ValidateAppearance(theme, errors);
 
         return new ThemeValidationResult(errors);
     }
@@ -58,6 +59,7 @@ public static class ThemeValidator
         AddIfInvalidColor(theme.GradientEnd, nameof(FolderTheme.GradientEnd), errors);
         AddIfInvalidColor(theme.StrokeColor, nameof(FolderTheme.StrokeColor), errors);
         AddIfInvalidColor(theme.GlowColor, nameof(FolderTheme.GlowColor), errors);
+        AddIfInvalidColor(theme.StickerColor, nameof(FolderTheme.StickerColor), errors);
     }
 
     private static void ValidateAngle(FolderTheme theme, ICollection<string> errors)
@@ -83,6 +85,20 @@ public static class ThemeValidator
         AddIfNegative(theme.StrokeWidth, nameof(FolderTheme.StrokeWidth), errors);
         AddIfNegative(theme.GlowRadius, nameof(FolderTheme.GlowRadius), errors);
         AddIfNegative(theme.ShadowOffset, nameof(FolderTheme.ShadowOffset), errors);
+    }
+
+    private static void ValidateAppearance(FolderTheme theme, ICollection<string> errors)
+    {
+        if (!Enum.IsDefined(theme.Material)) errors.Add(nameof(FolderTheme.Material));
+        if (!Enum.IsDefined(theme.Sticker)) errors.Add(nameof(FolderTheme.Sticker));
+        if (!IsInRange(theme.StickerX, StickerPlacement.MinimumCenter, StickerPlacement.MaximumCenter))
+            errors.Add(nameof(FolderTheme.StickerX));
+        if (!IsInRange(theme.StickerY, StickerPlacement.MinimumCenter, StickerPlacement.MaximumCenter))
+            errors.Add(nameof(FolderTheme.StickerY));
+        if (!IsInRange(theme.StickerScale, StickerPlacement.MinimumScale, StickerPlacement.MaximumScale))
+            errors.Add(nameof(FolderTheme.StickerScale));
+        if (!IsInRange(theme.StickerRotation, StickerPlacement.MinimumRotation, StickerPlacement.MaximumRotation))
+            errors.Add(nameof(FolderTheme.StickerRotation));
     }
 
     private static void AddIfInvalidColor(string? color, string propertyName, ICollection<string> errors)

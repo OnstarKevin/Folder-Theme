@@ -14,14 +14,24 @@
     <PublishTrimmed>false</PublishTrimmed>
     <DebugType>embedded</DebugType>
     <ApplicationIcon>Assets\FolderThemeStudio.ico</ApplicationIcon>
-    <Version>0.1.0-beta.8</Version>
+    <Version>0.1.0-beta.24-preview.8</Version>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.8</FileVersion>
+    <FileVersion>0.1.0.24</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\FolderThemeStudio.Core\FolderThemeStudio.Core.csproj" />
+    <PackageReference Include="Jint" Version="4.16.3" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\FolderThemeStudio.png" />
+    <Resource Include="Assets\BundledIcons\*.png" />
+    <EmbeddedResource Include="Assets\BundledIcons\*.ico" LogicalName="fts.icon.%(Filename)" />
+    <Resource Include="Assets\DefaultWallpaper.png" />
+    <Resource Include="Assets\IslandSky.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\plugins-sdk\examples\custom-settings\manifest.json" LogicalName="fts.example.settings.manifest" />
+    <EmbeddedResource Include="..\..\plugins-sdk\examples\custom-settings\main.js" LogicalName="fts.example.settings.script" />
   </ItemGroup>
 </Project>
+

@@ -33,7 +33,8 @@ foreach ($file in Get-ChildItem -LiteralPath $repositoryRootPath -File -Recurse 
 
     $relative = $file.FullName.Substring($repositoryPrefix.Length)
     $segments = $relative -split '[\\/]'
-    if (@($segments | Where-Object { $excludedSegments -contains $_ }).Count -ne 0) { continue }
+    if (@($segments | Where-Object { $excludedSegments -contains $_ -or $_ -like 'GitHub-Upload-v*' }).Count -ne 0) { continue }
+    if ($segments.Length -gt 1 -and $segments[0] -eq 'promo-film' -and $segments[1] -eq 'out') { continue }
 
     $destination = Join-Path $sourceStagingFullPath $relative
     $destinationDirectory = Split-Path -Parent $destination

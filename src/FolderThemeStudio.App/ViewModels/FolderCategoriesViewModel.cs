@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using FolderThemeStudio.App.Localization;
 using FolderThemeStudio.App.Services;
+using FolderThemeStudio.App.Settings;
 using Brush = System.Windows.Media.Brush;
 using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
@@ -42,7 +43,7 @@ public sealed class FolderCategoriesViewModel : INotifyPropertyChanged, IDisposa
         GradientEndPicker = new ColorPickerViewModel("#2868D7");
         GradientStartPicker.PropertyChanged += PickerChanged;
         GradientEndPicker.PropertyChanged += PickerChanged;
-        PresetColors = ["#2868D7", "#0F9D6C", "#BA4A37", "#9257C4", "#D28B00", "#D34E88"];
+        PresetColors = new ObservableCollection<string>(AppleColors.All.Select(color => color.Hex));
         PickFolderCommand = new RelayCommand(_ => _ = PickFolderAsync(), _ => !IsBusy);
         NewEntryCommand = new RelayCommand(_ => BeginNewEntry(), _ => !IsBusy);
         SaveCommand = new RelayCommand(_ => _ = SaveAsync(), _ => CanSave);
@@ -87,7 +88,8 @@ public sealed class FolderCategoriesViewModel : INotifyPropertyChanged, IDisposa
         }
     }
 
-    public string FolderPath { get => folderPath; private set { if (SetField(ref folderPath, value)) { OnPropertyChanged(nameof(FolderPathDisplay)); RefreshCommands(); } } }
+    public string FolderPath { get => folderPath; private set { if (SetField(ref folderPath, value)) { OnPropertyChanged(nameof(FolderPathDisplay)); OnPropertyChanged(nameof(FolderName)); RefreshCommands(); } } }
+    public string FolderName => Path.GetFileName(Path.TrimEndingDirectorySeparator(FolderPath));
     public string FolderPathDisplay => string.IsNullOrWhiteSpace(FolderPath) ? localization.Get("FolderCategories.Form.NoFolder") : FolderPath;
     public string Category { get => category; set { if (SetField(ref category, value)) RefreshCommands(); } }
     public string Note { get => note; set { if (SetField(ref note, value)) RefreshCommands(); } }
@@ -96,6 +98,7 @@ public sealed class FolderCategoriesViewModel : INotifyPropertyChanged, IDisposa
         get => GradientStartPicker.Hex;
         set
         {
+            if (value is null) return;
             GradientStartPicker.Hex = value;
             GradientEndPicker.Hex = value;
             OnPropertyChanged(nameof(AccentPreview));
@@ -187,6 +190,16 @@ public sealed class FolderCategoriesViewModel : INotifyPropertyChanged, IDisposa
         Note = string.Empty;
         ColorHex = PresetColors[0];
         SetStatus("FolderCategories.Status.Ready");
+    }
+
+    public void SelectFolderForQuickNote(string path)
+    {
+        SelectFolder(path);
+        if (string.IsNullOrWhiteSpace(Category))
+        {
+            var name = FolderName;
+            Category = string.IsNullOrWhiteSpace(name) ? "Folder" : name[..Math.Min(name.Length, 32)];
+        }
     }
 
     public void ChoosePresetColor(string? color)

@@ -7,6 +7,26 @@ namespace FolderThemeStudio.Core.Tests.Application;
 
 public sealed class FolderEditChordTests
 {
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(true, true, true)]
+    public void MouseHook_RemainsInstalledForEitherFeature(bool hoverCards, bool quickNotes, bool required)
+    {
+        Assert.Equal(required, FolderQuickEditMouseHook.IsRequired(hoverCards, quickNotes));
+    }
+    [Fact]
+    public void DeferredShortcut_ConsumesOnlyTheConfiguredChord()
+    {
+        var decision = new FolderQuickEditDecision(FolderEditChord.Default);
+        Assert.False(decision.TryBeginDeferredEdit(FolderMouseButton.Right, ModifierKeys.None));
+        Assert.False(decision.OnMouseUp(FolderMouseButton.Right));
+        Assert.True(decision.TryBeginDeferredEdit(FolderMouseButton.Right, ModifierKeys.Alt));
+        Assert.True(decision.OnMouseUp(FolderMouseButton.Right));
+        Assert.False(decision.OnMouseUp(FolderMouseButton.Right));
+    }
+
     [Fact]
     public void DefaultChord_OpensOnlyOnAltRightOverFolder()
     {

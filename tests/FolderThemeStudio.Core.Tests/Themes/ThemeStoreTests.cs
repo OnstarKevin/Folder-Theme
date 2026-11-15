@@ -23,6 +23,48 @@ public sealed class ThemeStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Load_VersionOneTheme_MigratesToOriginalGlassAppearance()
+    {
+        var old = FolderTheme.IceBlue with { Id = Guid.NewGuid(), Name = "Legacy", SchemaVersion = 1 };
+        var legacyJson = JsonSerializer.Serialize(old);
+        using var document = JsonDocument.Parse(legacyJson);
+        var oldFields = document.RootElement.EnumerateObject()
+            .Where(field => !field.Name.StartsWith("Sticker") && field.Name != "Material")
+            .ToDictionary(field => field.Name, field => field.Value.Clone());
+        await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(temp.Path, "legacy.json"),
+            JsonSerializer.Serialize(oldFields));
+
+        var result = await new ThemeStore(temp.Path).LoadAsync();
+
+        var upgraded = Assert.Single(result.Themes, theme => theme.Name == "Legacy");
+        Assert.Equal(FolderTheme.CurrentSchemaVersion, upgraded.SchemaVersion);
+        Assert.Equal(MaterialStyle.Glass, upgraded.Material);
+        Assert.Equal(StickerStyle.None, upgraded.Sticker);
+        Assert.Equal(old.GradientStart, upgraded.GradientStart);
+        Assert.Empty(result.Diagnostics);
+
+        var imported = await new ThemeStore(System.IO.Path.Combine(temp.Path, "imported")).ImportAsync(
+            System.IO.Path.Combine(temp.Path, "legacy.json"));
+        Assert.True(imported.Success);
+        Assert.Equal(MaterialStyle.Glass, imported.Theme!.Material);
+        Assert.Equal(StickerStyle.None, imported.Theme.Sticker);
+    }
+
+    [Fact]
+    public async Task SaveThenLoad_PreservesMaterialAndSticker()
+    {
+        var theme = FolderTheme.IceBlue with {
+            Id = Guid.NewGuid(), Name = "Decorated", Material = MaterialStyle.Paper,
+            Sticker = StickerStyle.Paw, StickerColor = "#FF0088", StickerX = 0.7,
+            StickerY = 0.3, StickerScale = 0.4, StickerRotation = -30
+        };
+        var store = new ThemeStore(temp.Path);
+        await store.SaveAsync(theme);
+
+        Assert.Equal(theme, Assert.Single((await store.LoadAsync()).Themes, item => item.Id == theme.Id));
+    }
+
+    [Fact]
     public async Task Import_InvalidTheme_ReturnsValidationErrorWithoutWritingTheme()
     {
         var importPath = System.IO.Path.Combine(temp.Path, "invalid.json");
@@ -96,7 +138,10 @@ public sealed class ThemeStoreTests : IDisposable
     public async Task ExportThenImport_PreservesTheme()
     {
         var source = new ThemeStore(System.IO.Path.Combine(temp.Path, "source"));
-        var theme = FolderTheme.IceBlue with { Id = Guid.NewGuid(), Name = "To export" };
+        var theme = FolderTheme.IceBlue with {
+            Id = Guid.NewGuid(), Name = "To export", Material = MaterialStyle.Clay,
+            Sticker = StickerStyle.Flower, StickerColor = "#FFEEDD", StickerRotation = 45
+        };
         await source.SaveAsync(theme);
         var exportedPath = System.IO.Path.Combine(temp.Path, "exported.json");
 

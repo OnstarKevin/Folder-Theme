@@ -29,7 +29,7 @@ public sealed class ThemeValidatorTests
 
     public static IEnumerable<object[]> InvalidThemes()
     {
-        yield return [FolderTheme.IceBlue with { SchemaVersion = 2 }, nameof(FolderTheme.SchemaVersion)];
+        yield return [FolderTheme.IceBlue with { SchemaVersion = 3 }, nameof(FolderTheme.SchemaVersion)];
         yield return [FolderTheme.IceBlue with { Name = " " }, nameof(FolderTheme.Name)];
         yield return [FolderTheme.IceBlue with { GradientStart = "#12345" }, nameof(FolderTheme.GradientStart)];
         yield return [FolderTheme.IceBlue with { GradientEnd = "blue" }, nameof(FolderTheme.GradientEnd)];
@@ -45,6 +45,13 @@ public sealed class ThemeValidatorTests
         yield return [FolderTheme.IceBlue with { StrokeWidth = -0.01 }, nameof(FolderTheme.StrokeWidth)];
         yield return [FolderTheme.IceBlue with { GlowRadius = -0.01 }, nameof(FolderTheme.GlowRadius)];
         yield return [FolderTheme.IceBlue with { ShadowOffset = -0.01 }, nameof(FolderTheme.ShadowOffset)];
+        yield return [FolderTheme.IceBlue with { Material = (MaterialStyle)99 }, nameof(FolderTheme.Material)];
+        yield return [FolderTheme.IceBlue with { Sticker = (StickerStyle)99 }, nameof(FolderTheme.Sticker)];
+        yield return [FolderTheme.IceBlue with { StickerColor = "red" }, nameof(FolderTheme.StickerColor)];
+        yield return [FolderTheme.IceBlue with { StickerX = double.NaN }, nameof(FolderTheme.StickerX)];
+        yield return [FolderTheme.IceBlue with { StickerY = 0.9 }, nameof(FolderTheme.StickerY)];
+        yield return [FolderTheme.IceBlue with { StickerScale = double.PositiveInfinity }, nameof(FolderTheme.StickerScale)];
+        yield return [FolderTheme.IceBlue with { StickerRotation = 181 }, nameof(FolderTheme.StickerRotation)];
     }
 
     [Theory]

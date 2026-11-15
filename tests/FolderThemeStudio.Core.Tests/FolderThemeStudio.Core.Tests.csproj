@@ -15,6 +15,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <None Update="TestSupport\IslandInputReceiver.ps1" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\FolderThemeStudio.Core\FolderThemeStudio.Core.csproj" />
     <ProjectReference Include="..\..\src\FolderThemeStudio.App\FolderThemeStudio.App.csproj" />
   </ItemGroup>

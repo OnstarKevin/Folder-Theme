@@ -1,0 +1,23 @@
+<Window x:Class="FolderThemeStudio.App.DynamicIsland.Plugins.IslandPluginManagerWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="灵动岛 · 插件与 DIY" Width="560" Height="640" MinWidth="420" MinHeight="460" ShowInTaskbar="False"
+ Style="{StaticResource {x:Type Window}}" WindowStartupLocation="CenterScreen" AllowDrop="True" Drop="Package_Drop" DragOver="Package_DragOver">
+ <Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel><TextBlock Text="让灵动岛，成为你的。" FontSize="24" FontWeight="SemiBold"/>
+   <TextBlock Text="导入插件包，或让 AI 帮你写一个。每个插件独立启停。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,9,0,16"/>
+   <WrapPanel><Button x:Name="InstallButton" Content="一键安装插件包" Click="Install_Click" Style="{StaticResource PrimaryButtonStyle}"/><Button Content="安装专注示例" Click="Example_Click" Margin="8,0,0,0"/></WrapPanel>
+  </StackPanel>
+  <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,18,0,0"><StackPanel>
+   <TextBlock x:Name="EmptyText" Text="还没有 DIY 插件。将 .islandpkg 文件拖到这里。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,12"/>
+   <ItemsControl x:Name="PluginList"><ItemsControl.ItemTemplate><DataTemplate>
+    <Border BorderBrush="#1A808080" BorderThickness="0,0,0,1" Padding="0,12"><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <StackPanel Margin="0,0,12,0"><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Status}" FontSize="12" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/><TextBlock Text="{Binding Permissions}" FontSize="12" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/></StackPanel>
+     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button Content="{Binding ToggleLabel}" Click="Toggle_Click" Tag="{Binding Id}"/><Button Content="移除" Click="Remove_Click" Tag="{Binding Id}" Margin="6,0,0,0"/></StackPanel>
+    </Grid></Border>
+   </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+   <Expander Header="用 AI 制作我的插件" Margin="0,20,0,10"><StackPanel Margin="0,12,0,0"><TextBlock Text="复制提示词，写上你的想法，交给 AI。生成后将插件包拖入这里。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"/><TextBox x:Name="PromptBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" Height="180" VerticalScrollBarVisibility="Auto" Margin="0,10"/><Button Content="复制 AI 提示词" Click="CopyPrompt_Click" HorizontalAlignment="Left"/></StackPanel></Expander>
+   <Expander Header="开发者 · Hook 协议与权限" Margin="0,10"><StackPanel Margin="0,12,0,0"><TextBlock Text="API v1：onInit / onEvent / onTick / onDispose。通过 island.publish 发布单行内容，island.clear 清除。宿主保留尺寸、透明和穿透控制。" TextWrapping="Wrap"/><TextBlock Text="事件按 media.read、clipboard.read、notifications.read 权限转发。对应内置模块关闭时，不采集或发送其数据。此版本不支持网络、系统命令或 DLL 插件。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,0"/><Button Content="导出完整 SDK 与示例" Click="ExportSdk_Click" HorizontalAlignment="Left" Margin="0,12,0,0"/></StackPanel></Expander>
+  </StackPanel></ScrollViewer>
+  <TextBlock Grid.Row="2" x:Name="StatusText" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,12,0,0"/>
+ </Grid>
+</Window>

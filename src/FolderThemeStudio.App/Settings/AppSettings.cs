@@ -5,7 +5,7 @@ namespace FolderThemeStudio.App.Settings;
 
 public sealed record FolderPalette(string GradientStart, string GradientEnd, string Stroke, string Glow)
 {
-    public static FolderPalette Default { get; } = new("#65D9FF", "#478CFF", "#B9F5FF", "#43BFFF");
+    public static FolderPalette Default { get; } = new("#007AFF", "#0055D4", "#FFFFFF", "#007AFF");
 }
 
 public sealed record AppSettings(
@@ -18,6 +18,12 @@ public sealed record AppSettings(
     bool MonitoringPaused = false,
     double CardOpacity = 1)
 {
+    public bool ThemeEditingEnabled { get; init; } = true;
+    public bool AutomaticRulesEnabled { get; init; } = true;
+    public bool HoverCardsEnabled { get; init; } = true;
+    public bool QuickNotesEnabled { get; init; } = true;
+    public bool DynamicIslandEnabled { get; init; } = true;
+    public bool ApplicationBackgroundEnabled { get; init; } = true;
     public FolderEditChord EditChord { get; init; } = FolderEditChord.Default;
     private static readonly Regex HexColor = new("^#[0-9A-Fa-f]{6}$", RegexOptions.CultureInvariant);
 
@@ -63,7 +69,10 @@ public sealed record AppSettings(
             value.StartWithWindows,
             value.CloseToTray,
             value.MonitoringPaused,
-            value.CardOpacity) { EditChord = normalizedChord };
+            value.CardOpacity) { EditChord = normalizedChord,
+            ThemeEditingEnabled = value.ThemeEditingEnabled, AutomaticRulesEnabled = value.AutomaticRulesEnabled,
+            HoverCardsEnabled = value.HoverCardsEnabled, QuickNotesEnabled = value.QuickNotesEnabled,
+            DynamicIslandEnabled = value.DynamicIslandEnabled, ApplicationBackgroundEnabled = value.ApplicationBackgroundEnabled };
         return true;
     }
 }

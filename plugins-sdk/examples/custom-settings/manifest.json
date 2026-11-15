@@ -1,0 +1,72 @@
+{
+  "id": "studio.custom-settings",
+  "name": "专注与日程",
+  "description": "专注/休息计时、时钟与每日时间提醒",
+  "version": "2.0.0",
+  "apiVersion": 1,
+  "minHostVersion": "0.1.0-beta.24-preview.8",
+  "entry": "main.js",
+  "permissions": [],
+  "settings": [
+    {
+      "key": "message",
+      "label": "自定义标题",
+      "type": "string",
+      "default": "我的专注"
+    },
+    {
+      "key": "showIcon",
+      "label": "显示图标",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "showClock",
+      "label": "显示当前时间",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "focusEnabled",
+      "label": "开启专注倒计时",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "focusMinutes",
+      "label": "专注时长（分钟，1–180）",
+      "type": "number",
+      "default": 25
+    },
+    {
+      "key": "breakMinutes",
+      "label": "休息时长（分钟，1–60）",
+      "type": "number",
+      "default": 5
+    },
+    {
+      "key": "autoCycle",
+      "label": "专注与休息自动循环",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "reminderEnabled",
+      "label": "开启每日定时提醒",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "reminderTime",
+      "label": "每日提醒时间（HH:mm，本机时间）",
+      "type": "time",
+      "default": "09:00"
+    },
+    {
+      "key": "reminderText",
+      "label": "每日提醒文字",
+      "type": "string",
+      "default": "该开始今天的计划了。"
+    }
+  ]
+}

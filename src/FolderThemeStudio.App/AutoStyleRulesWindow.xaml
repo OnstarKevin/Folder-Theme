@@ -1,4 +1,4 @@
-<controls:RoundedWindow x:Class="FolderThemeStudio.App.AutoStyleRulesWindow"
+<controls:RoundedWindow x:Class="FolderThemeStudio.App.AutoStyleRulesWindow" Style="{StaticResource {x:Type Window}}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"

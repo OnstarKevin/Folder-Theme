@@ -1,0 +1,22 @@
+<UserControl x:Class="FolderThemeStudio.App.Performance.PerformanceView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <StackPanel>
+  <TextBlock Text="观察真实的后台占用" FontSize="18" FontWeight="SemiBold"/>
+  <TextBlock Text="统计当前安装路径下的主程序与插件进程。实时统计每2秒更新，仅本页可见时采样；下方延迟快照只在你点击后运行一次。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,18"/>
+  <UniformGrid Columns="2">
+   <Border Background="#F0F2F8" CornerRadius="14" Padding="18" Margin="0,0,6,12"><StackPanel><TextBlock Text="软件CPU" Foreground="{StaticResource MutedTextBrush}"/><TextBlock x:Name="CpuValue" Text="采样中" FontSize="25" FontWeight="SemiBold" Margin="0,8,0,0"/></StackPanel></Border>
+   <Border Background="#F0F2F8" CornerRadius="14" Padding="18" Margin="6,0,0,12"><StackPanel><TextBlock Text="工作集合计" Foreground="{StaticResource MutedTextBrush}"/><TextBlock x:Name="WorkingSetValue" Text="—" FontSize="25" FontWeight="SemiBold" Margin="0,8,0,0"/></StackPanel></Border>
+   <Border Background="#F0F2F8" CornerRadius="14" Padding="18" Margin="0,0,6,12"><StackPanel><TextBlock Text="私有内存合计" Foreground="{StaticResource MutedTextBrush}"/><TextBlock x:Name="PrivateValue" Text="—" FontSize="25" FontWeight="SemiBold" Margin="0,8,0,0"/></StackPanel></Border>
+   <Border Background="#F0F2F8" CornerRadius="14" Padding="18" Margin="6,0,0,12"><StackPanel><TextBlock Text="软件进程数" Foreground="{StaticResource MutedTextBrush}"/><TextBlock x:Name="ProcessCountValue" Text="—" FontSize="25" FontWeight="SemiBold" Margin="0,8,0,0"/></StackPanel></Border>
+  </UniformGrid>
+  <WrapPanel Margin="0,6,0,12"><Button x:Name="RefreshButton" Content="刷新统计" Click="Refresh_Click"/><Button Content="复制统计" Click="Copy_Click" Margin="8,0,0,0"/></WrapPanel>
+  <TextBlock x:Name="StatusText" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"/>
+  <Border Background="#EEF1FA" CornerRadius="12" Padding="16" Margin="0,18,0,0"><StackPanel>
+   <TextBlock Text="记录真实后台状态" FontWeight="SemiBold"/>
+   <TextBlock Text="点击后请手动最小化或收起到托盘，勿退出软件。10秒后开始一次2秒取样，完成后回到这里查看；不会自动隐藏窗口、切换焦点或启停模块。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,7,0,10"/>
+   <WrapPanel><Button x:Name="DelayedButton" Content="10秒后记录快照" Click="Delayed_Click"/><Button x:Name="CopyDelayedButton" Content="复制快照" IsEnabled="False" Click="CopyDelayed_Click" Margin="8,0,0,0"/></WrapPanel>
+   <TextBlock x:Name="DelayedText" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,10,0,0"/>
+  </StackPanel></Border>
+  <Border Background="#F5F5F8" CornerRadius="12" Padding="16" Margin="0,20,0,0"><TextBlock Text="建议分别记录仅灵动岛、打开设置、启用一个插件、启用多个插件四种状态。CPU为软件进程合计，并按逻辑处理器数量归一化；首个样本需等待下一次刷新。工作集包含可共享页面，其合计不代表独占物理内存；比较时同时参考私有内存。页面自身也会产生少量采样开销，同路径多个软件实例会一并计入。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" LineHeight="21"/></Border>
+ </StackPanel>
+</UserControl>

@@ -9,28 +9,28 @@ namespace FolderThemeStudio.Core.Tests.Application;
 public sealed class ReleaseConfigurationTests
 {
     [Fact]
-    public void AppAssembly_IdentifiesBeta8Release()
+    public void AppAssembly_IdentifiesBeta24AppearancePreview()
     {
         var version = FileVersionInfo.GetVersionInfo(typeof(FolderThemeStudio.App.App).Assembly.Location);
 
-        Assert.StartsWith("0.1.0-beta.8", version.ProductVersion);
-        Assert.Equal("0.1.0.8", version.FileVersion);
+        Assert.StartsWith("0.1.0-beta.24-preview.8", version.ProductVersion);
+        Assert.Equal("0.1.0.24", version.FileVersion);
     }
 
     [Fact]
-    public void PackageScript_DefaultsToBeta8AndExcludesLocalArtifacts()
+    public void PackageScript_DefaultsToBeta24AppearancePreviewAndExcludesLocalArtifacts()
     {
         var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
         var script = File.ReadAllText(Path.Combine(root, "build", "Package-Release.ps1"));
         var sourceArchiveScript = File.ReadAllText(Path.Combine(root, "build", "New-SourceArchive.ps1"));
 
-        Assert.Contains("v0.1.0-beta.8", script);
+        Assert.Contains("v0.1.0-beta.24-preview.8", script);
         Assert.Contains("desktop.ini", sourceArchiveScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("node_modules", sourceArchiveScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(".hyperframes", sourceArchiveScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("renders", sourceArchiveScript, StringComparison.OrdinalIgnoreCase);
         var installer = File.ReadAllText(Path.Combine(root, "build", "FolderThemeStudio.iss"));
-        Assert.Contains("0.1.0.8", installer);
+        Assert.Contains("0.1.0.24", installer);
         Assert.Contains("RegDeleteValue", installer);
         Assert.Contains("FolderThemeStudio", installer);
     }
@@ -50,6 +50,8 @@ public sealed class ReleaseConfigurationTests
             var sourceFile = Path.Combine(sourceRoot, "legacy-timestamp.txt");
             File.WriteAllText(sourceFile, "archive me");
             File.SetLastWriteTimeUtc(sourceFile, new DateTime(1970, 1, 1, 0, 0, 1, DateTimeKind.Utc));
+            var priorRelease = Directory.CreateDirectory(Path.Combine(sourceRoot, "GitHub-Upload-v0.1.0-beta.9"));
+            File.WriteAllText(Path.Combine(priorRelease.FullName, "old-installer.exe"), "exclude me");
 
             var startInfo = new ProcessStartInfo
             {

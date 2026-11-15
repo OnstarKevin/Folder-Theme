@@ -10,7 +10,7 @@ namespace FolderThemeStudio.Core.Tests.Application;
 public sealed class TutorialViewModelTests
 {
     [Fact]
-    public void Navigation_IsBoundedAcrossFiveLocalizedSteps()
+    public void Navigation_IsBoundedAcrossThreeLocalizedSteps()
     {
         using var directory = new TemporaryDirectory();
         var viewModel = new TutorialViewModel(
@@ -18,15 +18,15 @@ public sealed class TutorialViewModelTests
             new JsonAppSettingsStore(Path.Combine(directory.Path, "settings.json")),
             new LocalizationService(applyToApplication: false));
 
-        Assert.Equal(5, viewModel.Steps.Count);
+        Assert.Equal(3, viewModel.Steps.Count);
         Assert.Equal("选择主题", viewModel.CurrentStep.Title);
         Assert.False(viewModel.PreviousCommand.CanExecute(null));
 
         for (var index = 0; index < 8; index++) viewModel.NextCommand.Execute(null);
 
-        Assert.Equal(4, viewModel.StepIndex);
+        Assert.Equal(2, viewModel.StepIndex);
         Assert.False(viewModel.NextCommand.CanExecute(null));
-        Assert.Equal("需要时恢复", viewModel.CurrentStep.Title);
+        Assert.Equal("预览并应用", viewModel.CurrentStep.Title);
     }
 
     [Theory]

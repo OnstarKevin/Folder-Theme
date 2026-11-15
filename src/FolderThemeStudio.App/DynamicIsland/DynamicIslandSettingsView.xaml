@@ -1,0 +1,97 @@
+<UserControl x:Class="FolderThemeStudio.App.DynamicIsland.DynamicIslandSettingsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:FolderThemeStudio.App.Controls" FontFamily="Microsoft YaHei UI, Microsoft YaHei" FontSize="13">
+    <Grid Margin="0">
+        <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,6,12">
+                <TextBlock x:Name="IntroTitle" Text="桌面灵动岛" FontSize="24" FontWeight="SemiBold"/>
+                <TextBlock x:Name="IntroText" Text="模块独立开关，保存后应用。外观、歌词和消息可从左侧直接管理。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,10,0,18"/>
+                <CheckBox x:Name="ClickThroughCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="鼠标点击穿透，操作后面的窗口" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="HoverDetailsCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="悬停显示精简摘要" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <WrapPanel x:Name="QuickActions" Margin="0,12,0,16"><Button Content="显示灵动岛" Click="ShowIsland_Click" Margin="0,0,8,8"/><Button Content="关闭灵动岛" Click="HideIsland_Click" Margin="0,0,8,8"/><Button Content="编辑位置" Click="EditPosition_Click" Margin="0,0,0,8"/><Button Content="插件与 DIY" Click="Plugins_Click" Margin="8,0,0,8"/></WrapPanel>
+                <StackPanel x:Name="ContentSection">
+<TextBlock Text="显示内容" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/><StackPanel Margin="2,10,0,0">
+                                <TextBlock Text="刷新间隔（秒，1–60）" FontWeight="SemiBold" Margin="0,18,0,8"/>
+                <TextBox x:Name="IntervalBox"/>
+                <CheckBox x:Name="TimeCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="当前时间" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="CpuCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="CPU 使用率" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="MemoryCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="内存使用率" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+
+                <CheckBox x:Name="QuotesCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="一言金句（联网获取，不发送剪贴板内容）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="AutoQuotesCheck"  Margin="0,5" IsEnabled="{Binding IsChecked, ElementName=QuotesCheck}"><CheckBox.Content><TextBlock Text="每 30 秒换一句（关闭后保留当前金句）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <TextBlock Text="新消息优先；随后为剪贴板预览（10 秒）、播放中的歌词或歌名。金句仅在空闲时显示。长内容单行省略，悬停查看详情。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,6,0,8"/>
+
+                </StackPanel></StackPanel>
+                <StackPanel x:Name="NotificationsSection">                <CheckBox x:Name="ClipboardCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="最新剪贴板文本（仅保留内存预览）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="NotificationsCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="通知与消息（系统通知访问需用户授权）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+<TextBlock Text="消息与本地接口" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/><StackPanel Margin="2,10,0,0">
+                <TextBlock Text="QQ 等应用需开启 Windows 系统通知；自绘聊天弹窗无法通过此通道读取。消息每秒独立检查，不受性能采样间隔影响。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,6,0,8"/>
+                <Button Content="请求通知读取权限" Click="NotificationAccess_Click" HorizontalAlignment="Left" Margin="0,8,0,10"/>
+                <TextBlock x:Name="NotificationStatus" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap"/>
+                <TextBlock Text="屏蔽消息来源（应用名称或 ID，多项用分号分隔）" Margin="0,12,0,5" TextWrapping="Wrap"/>
+                <TextBox x:Name="BlockedSourcesBox" MaxLength="2048"/>
+                <TextBlock Text="只提醒开启后的新消息，每条 6 秒；相同消息去重，最多排队 8 条。来源名称显示在提醒与悬停详情中。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,6,0,8"/>
+                <CheckBox x:Name="LocalNotificationsCheck"  Margin="0,10,0,5"><CheckBox.Content><TextBlock Text="启用本地消息接口（仅 127.0.0.1，需通知模块开启）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <TextBlock Text="本地消息端口（1024–65535）" Margin="0,5"/>
+                <TextBox x:Name="NotificationPortBox"/>
+                <DockPanel Margin="0,8"><Button DockPanel.Dock="Right" Content="复制接口令牌" Click="CopyToken_Click"/><TextBlock Text="令牌只在本机使用" VerticalAlignment="Center"/></DockPanel>
+                </StackPanel></StackPanel>
+                <StackPanel x:Name="AppearanceSection">
+<TextBlock Text="外观与动画" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/><StackPanel Margin="2,10,0,0">
+                <TextBlock Text="字体" FontWeight="SemiBold" Margin="0,4,0,6"/>
+                <ComboBox x:Name="FontFamilyBox" DisplayMemberPath="Label" SelectionChanged="FontSelection_Changed"/>
+                <WrapPanel Margin="0,8,0,0"><Button x:Name="ImportFontButton" Content="导入字体文件" Click="ImportFont_Click"/><Button x:Name="ResetFontButton" Content="恢复微软雅黑" Click="ResetFont_Click" Margin="8,0,0,0"/></WrapPanel>
+                <TextBlock x:Name="FontSourceText" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,7,0,0"/>
+                <Border Background="#F0F0F4" CornerRadius="10" Padding="12,9" Margin="0,10,0,12"><TextBlock x:Name="FontPreview" Text="晚风经过，故事继续。 02:16" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis"/></Border>
+                <TextBlock Text="灵动岛背景" FontSize="17" FontWeight="SemiBold" Margin="0,16,0,10"/>
+                <CheckBox x:Name="ImageBackgroundCheck" Content="启用图片背景" Checked="BackgroundPreview_Changed" Unchecked="BackgroundPreview_Changed" Margin="0,4,0,8"/>
+                <WrapPanel Margin="0,0,0,8"><Button x:Name="ImportBackgroundButton" Content="选择背景图片" Click="ImportBackground_Click"/><Button x:Name="ResetBackgroundButton" Content="恢复天色原图" Click="ResetBackground_Click" Margin="8,0,0,0"/></WrapPanel>
+                <TextBlock x:Name="BackgroundSourceText" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"/>
+                <TextBlock Text="推荐约1200×160像素的横图、文件2 MiB以内，覆盖最长约302×42 DIP音乐状态（含高DPI屏幕）。支持PNG/JPEG，最大16 MiB；导入自动缩小至最长边1600像素，保存软件内副本。" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,6,0,12"/>
+                <Border Background="#E8E9EF" CornerRadius="12" Padding="12" Margin="0,0,0,14"><StackPanel>
+                  <TextBlock Text="最长状态预览（修改后保存应用）" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,10"/>
+                  <Border Width="302" Height="42" CornerRadius="21" BorderThickness=".8" BorderBrush="#A0B9AEF7" HorizontalAlignment="Left"><Grid>
+                   <Grid x:Name="BackgroundPreviewLayers"><Border x:Name="BackgroundPreviewImage" CornerRadius="21"/><Border x:Name="BackgroundPreviewTint" CornerRadius="21"/></Grid>
+                   <TextBlock Text="晚风经过，故事继续。" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="14,0" Foreground="#30303C"/>
+                  </Grid></Border>
+                </StackPanel></Border>
+                <TextBlock Text="图片裁切位置" Margin="0,4,0,6"/>
+                <ComboBox x:Name="BackgroundAlignmentBox" SelectedValuePath="Tag" SelectionChanged="BackgroundPreview_Changed"><ComboBoxItem Tag="Top" Content="顶部"/><ComboBoxItem Tag="Center" Content="居中"/><ComboBoxItem Tag="Bottom" Content="底部"/></ComboBox>
+                <TextBlock Text="背景不透明度" Margin="0,14,0,6"/><Slider x:Name="BackgroundOpacitySlider" Minimum="0" Maximum="1" ValueChanged="BackgroundPreview_Changed"/>
+                <TextBlock Text="淡色程度" Margin="0,14,0,6"/><Slider x:Name="BackgroundLightenSlider" Minimum="0" Maximum="1" ValueChanged="BackgroundPreview_Changed"/>
+                <TextBlock Text="渐变方向" Margin="0,14,0,6"/>
+                <ComboBox x:Name="BackgroundDirectionBox" SelectedValuePath="Tag" SelectionChanged="BackgroundPreview_Changed"><ComboBoxItem Tag="Down" Content="向下淡出"/><ComboBoxItem Tag="Up" Content="向上淡出"/><ComboBoxItem Tag="Left" Content="向左淡出"/><ComboBoxItem Tag="Right" Content="向右淡出"/><ComboBoxItem Tag="Edges" Content="中心向四周淡出"/><ComboBoxItem Tag="None" Content="无渐变"/></ComboBox>
+                <TextBlock Text="渐变方式" Margin="0,14,0,6"/>
+                <ComboBox x:Name="BackgroundProfileBox" SelectedValuePath="Tag" SelectionChanged="BackgroundPreview_Changed"><ComboBoxItem Tag="Smooth" Content="柔和渐变"/><ComboBoxItem Tag="Linear" Content="线性渐变"/></ComboBox>
+                <TextBlock Text="渐变强度（左：保留原图；右：完全淡出）" TextWrapping="Wrap" Margin="0,14,0,6"/><Slider x:Name="BackgroundStrengthSlider" Minimum="0" Maximum="1" ValueChanged="BackgroundPreview_Changed"/>
+                <TextBlock Text="渐变起点（越靠右，完整保留的区域越多）" TextWrapping="Wrap" Margin="0,14,0,6"/><Slider x:Name="BackgroundStartSlider" Minimum="0" Maximum=".95" ValueChanged="BackgroundPreview_Changed"/>
+                <TextBlock Text="彩色细边框" FontSize="17" FontWeight="SemiBold" Margin="0,22,0,10"/>
+                <CheckBox x:Name="FlowBorderCheck" Content="启用0.8 DIP柔彩边框" Margin="0,4,0,8"/>
+                <CheckBox x:Name="AnimateBorderCheck" Content="缓慢流动（关闭系统动画时保持静止）" IsEnabled="{Binding IsChecked, ElementName=FlowBorderCheck}" Margin="0,4,0,12"/>
+                <TextBlock Text="灵动岛整体透明度" FontWeight="SemiBold" Margin="0,8,0,8"/>
+                <Slider x:Name="OpacitySlider" Minimum="20" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"/>
+                <CheckBox x:Name="LightTextCheck"  Margin="0,12,0,5"><CheckBox.Content><TextBlock Text="浅色文字（适合深色壁纸）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="StretchMotionCheck"  Margin="0,14,0,5"><CheckBox.Content><TextBlock Text="物理弹簧伸缩（单行、最长约 8 cm）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="DragMotionCheck"  Margin="0,14,0,5"><CheckBox.Content><TextBlock Text="弹性拖动（遵循 Windows 动画设置）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="SnapEdgesCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="靠近屏幕边缘时吸附" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                </StackPanel></StackPanel>
+                <StackPanel x:Name="LyricsSection">
+                <CheckBox x:Name="MusicCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="歌曲信息与媒体控制" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="LyricsCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="播放时自动展示同步歌词（未找到时显示歌名）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <CheckBox x:Name="OnlineLyricsCheck"  Margin="0,5"><CheckBox.Content><TextBlock Text="在线获取歌词（向歌词服务发送歌名和歌手）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+
+<TextBlock Text="歌词来源" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/><StackPanel Margin="2,10,0,0">
+
+                <TextBlock Text="LRC 歌词文件夹" FontWeight="SemiBold" Margin="0,18,0,8"/>
+                <DockPanel><Button DockPanel.Dock="Right" Content="选择" Click="LyricsDirectory_Click" Margin="8,0,0,0"/><TextBox x:Name="LyricsDirectoryBox"/></DockPanel>
+                <TextBlock Text="本地 LRC 优先，文件名为歌曲名.lrc 或 歌手 - 歌曲名.lrc；开启在线歌词后自动回退获取。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,8,0,14"/>
+                </StackPanel></StackPanel>
+                <CheckBox x:Name="StartupCheck" Visibility="Collapsed"  Margin="0,6"><CheckBox.Content><TextBlock Text="随 Windows 启动软件（与主软件共用此设置）" TextWrapping="Wrap"/></CheckBox.Content></CheckBox>
+                <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="#D42B25" Margin="0,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button x:Name="CancelButton" Content="放弃修改" Click="Cancel_Click" Margin="0,0,10,0"/>
+            <Button x:Name="SaveButton" Content="保存" Click="Save_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

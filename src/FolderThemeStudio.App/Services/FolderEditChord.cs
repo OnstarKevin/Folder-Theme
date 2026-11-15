@@ -53,4 +53,11 @@ public sealed class FolderQuickEditDecision(FolderEditChord chord)
         consumedButton = null;
         return true;
     }
+
+    public bool TryBeginDeferredEdit(FolderMouseButton button, ModifierKeys modifiers)
+    {
+        if (button != chord.Button || modifiers != chord.Modifiers) return false;
+        consumedButton = button;
+        return true;
+    }
 }
